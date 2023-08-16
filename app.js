@@ -34,21 +34,43 @@ app.use(`${api}/users`, usersRoutes);
 app.use(`${api}/orders`, ordersRoutes);
 
 const PORT =process.env.PORT || 3000 ;
-//database
-mongoose.connect(process.env.CONNECTION_STRING, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    dbName: process.env.DB_NAME
-})
-.then(()=>{
-    console.log('Database Connection is ready...')
-    app.listen(PORT,()=>{
-        console.log('server is running');
+
+const connectDB = async () => {
+    try {
+      const conn = await mongoose.connect(process.env.CONNECTION_STRING, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        dbName: process.env.DB_NAME
+    });
+      console.log(`MongoDB Connected: ${conn.connection.host}`);
+    } catch (error) {
+      console.log(error);
+      process.exit(1);
+    }
+  }
+
+  //Connect to the database before listening
+connectDB().then(() => {
+    app.listen(PORT, () => {
+        console.log("listening for requests");
     })
 })
-.catch((err)=> {
-    console.log(err);
-})
+
+//database
+// mongoose.connect(process.env.CONNECTION_STRING, {
+//     useNewUrlParser: true,
+//     useUnifiedTopology: true,
+//     dbName: process.env.DB_NAME
+// })
+// .then(()=>{
+//     console.log('Database Connection is ready...')
+//     app.listen(PORT,()=>{
+//         console.log('server is running');
+//     })
+// })
+// .catch((err)=> {
+//     console.log(err);
+// })
 
 
 
