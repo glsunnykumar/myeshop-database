@@ -4,6 +4,8 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const multer = require('multer');
+const AWS = require("aws-sdk");
+const s3 = new AWS.S3()
 
 const FILE_TYPE_MAP ={
     'image/png':'png',
@@ -84,7 +86,6 @@ router.post(`/`,uploadOptions.single('image'), async(req, res) =>{
     const basePath =`${req.protocol}://${req.get('host')}/public/upload/`;
     if(!category)
     return res.status(500).send('Invalid Category');
-    console.log(`${basePath}${fileName}`);
 
     let product = new Product({
         name: req.body.name,
@@ -109,6 +110,13 @@ router.post(`/`,uploadOptions.single('image'), async(req, res) =>{
 
 router.put(`/:id`,uploadOptions.single('image'),async(req,res)=>{
 
+
+ 
+
+
+
+
+
     if (!mongoose.isValidObjectId(req.params.id)) {
         return res.status(400).send('Invalid Product Id');
     }
@@ -129,6 +137,12 @@ router.put(`/:id`,uploadOptions.single('image'),async(req,res)=>{
         imagepath =  `${basePath}${filename}` ;
     }
     else{
+        await s3.putObject({
+            Body: JSON.stringify(req.body),
+            Bucket: process.env.BUCKET,
+            Key: filename,
+          }).promise()
+        
         imagepath = product.image;
     }
 
