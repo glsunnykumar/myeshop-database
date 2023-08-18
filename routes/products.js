@@ -5,7 +5,6 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const multer = require('multer');
 const AWS = require("aws-sdk");
-const s3 = new AWS.S3()
 
 const FILE_TYPE_MAP ={
     'image/png':'png',
@@ -57,7 +56,7 @@ const filefilter = (req, file, cb) => {
 const upload = multer({ storage: storage, fileFilter: filefilter });
 
 
- s3 = new S3Client({
+ const s3 = new AWS.S3({
     credentials: {
         accessKeyId: "ASIATM5NDY7NU4E4JRFT", // store it in .env file to keep it safe
         secretAccessKey: "33Nfv7rMLxKuyHdOQ15B57irpLFkcOnfhj31j0mt",
@@ -217,7 +216,7 @@ router.put(`/:id`,upload.single('image'),async(req,res)=>{
 })
 
 router.put(`/gallery-images/:id`,
-uploadOptions.array('image' , 4),
+upload.array('image' , 4),
 async(req,res)=>{
 
     if(!mongoose.isValidObjectId(req.params.id)){
