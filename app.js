@@ -23,6 +23,7 @@ const categoriesRoutes = require('./routes/categories');
 const productsRoutes = require('./routes/products');
 const usersRoutes = require('./routes/users');
 const ordersRoutes = require('./routes/orders');
+const imageRoutes = require('./routes/imageupload');
 
 
 
@@ -32,6 +33,7 @@ app.use(`${api}/categories`, categoriesRoutes);
 app.use(`${api}/products`, productsRoutes);
 app.use(`${api}/users`, usersRoutes);
 app.use(`${api}/orders`, ordersRoutes);
+app.use(`${api}/images`, imageRoutes);
 
 const PORT =process.env.PORT || 3000 ;
 
