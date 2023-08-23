@@ -70,7 +70,8 @@ const upload = multer({
         cb(null ,{fieldName :file.fieldname})
         },
         key :function(req,file,cb){
-            cb(null ,"image.jpeg");
+            const uniqueFileName = `${Date.now()}_${file.originalname}`;
+            cb(null ,uniqueFileName);
         },
     })
 });
@@ -80,12 +81,13 @@ const upload = multer({
 router.post(`/`,upload.single('image'), async(req, res) =>{
     const category = await Category.findById(req.body.category);
     const file = req.file;
-    const fileName = file.filename;    
+    
     if(!file) return res.status(400).send('file not found');
-    // Definning the params variable to uplaod the photo
-
+    // Generate a unique filename or add a timestamp to avoid conflicts
+    const uniqueFileName = `${Date.now()}_${file.originalname}`;
   
     const basePath =`${req.protocol}://${req.get('host')}/public/upload/`;
+    console.log(basePath);
     if(!category)
     return res.status(500).send('Invalid Category');
 
@@ -93,7 +95,7 @@ router.post(`/`,upload.single('image'), async(req, res) =>{
         name: req.body.name,
         description: req.body.description,
         richDescription: req.body.richDescription,
-        image:req.file.location ,
+        image: `${basePath}${uniqueFileName}`, // Include the full image URL
         brand: req.body.brand,
         price: req.body.price,
         category: req.body.category,
