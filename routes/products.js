@@ -1,93 +1,40 @@
 const {Product} = require('../models/product');
 const {Category} =require('../models/category');
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const multer = require("multer");
+const multerS3 = require("multer-s3");
+const mongoose = require("mongoose");
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose');
-const multer = require('multer');
-const multerS3 = require('multer-s3');
-const AWS = require("aws-sdk");
 
-const FILE_TYPE_MAP ={
-    'image/png':'png',
-    'image/jpeg':'jpeg',
-    'image/jpg':'jpg'
-}
+// Configure AWS SDK
+const s3Client = new S3Client({
+    region: "eu-west-1"
+});
 
-
-// creating the storage variable to upload the file and providing the destination folder, 
-// if nothing is provided in the callback it will get uploaded in main directory
-
-const storage = multer.memoryStorage({
-    destination: function (req, file, cb) {
-        cb(null, '')
-    }
-})
-
-// below variable is define to check the type of file which is uploaded
-
-const filefilter = (req, file, cb) => {
-    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg') {
-        cb(null, true)
-    } else {
-        cb(null, false)
-    }
-}
-
-// const storage = multer.diskStorage({
-//     destination: function (req, file, cb) {
-    
-//       const isValid =  FILE_TYPE_MAP[file.mimetype];
-//       let UploadError = new Error('invalid image type');
-//       if(isValid){
-//         UploadError = null;
-//       }
-//       cb(UploadError, 'public/upload')
-//     },
-//     filename: function (req, file, cb) {
-//       const fileName = file.originalname.split(' ').join('-');  
-//       const extension = FILE_TYPE_MAP[file.mimetype];
-//       cb(null, `${fileName}-${Date.now()}.${extension}`);
-//     }
-//   })
-  
- // const uploadOptions = multer({ storage: storage })
-
- const s3 = new AWS.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID, // store it in .env file to keep it safe
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region : process.env.AWS_REGION
-
-})
-
-
-
- // defining the upload variable for the configuration of photo being uploaded
-const upload = multer({ 
+// Configure multer for file upload
+const upload = multer({
     storage: multerS3({
-        s3 : s3,
-        bucket :'cyclic-plum-courageous-cormorant-eu-west-1',
-        metadata :function(req,file,cb){
-        cb(null ,{fieldName :file.fieldname})
+        s3: s3Client,
+        bucket: "cyclic-plum-courageous-cormorant-eu-west-1",
+        acl: "public-read", // Make uploaded file public-readable (optional)
+        key: function (req, file, cb) {
+            cb(null, Date.now().toString() + "-" + file.originalname);
         },
-        key :function(req,file,cb){
-            const uniqueFileName = `${Date.now()}_${file.originalname}`;
-            cb(null ,uniqueFileName);
-        },
-    })
+    }),
 });
 
 
-
-router.post(`/`,upload.single('image'), async(req, res) =>{
+router.post(`/`,upload.single('file'), async(req, res) =>{
     const category = await Category.findById(req.body.category);
+
+   // Get the file path from the request
+   const filePath = req.file.location;
+   console.log(filePath);
+
     const file = req.file;
     
     if(!file) return res.status(400).send('file not found');
-    // Generate a unique filename or add a timestamp to avoid conflicts
-    const uniqueFileName = `${Date.now()}_${file.originalname}`;
-  
-    const basePath =`${req.protocol}://${req.get('host')}/public/upload/`;
-    console.log(basePath);
     if(!category)
     return res.status(500).send('Invalid Category');
 
@@ -95,7 +42,7 @@ router.post(`/`,upload.single('image'), async(req, res) =>{
         name: req.body.name,
         description: req.body.description,
         richDescription: req.body.richDescription,
-        image: `${basePath}${uniqueFileName}`, // Include the full image URL
+        image:filePath, // Include the full image URL
         brand: req.body.brand,
         price: req.body.price,
         category: req.body.category,
