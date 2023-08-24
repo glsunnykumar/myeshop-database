@@ -1,29 +1,30 @@
 const {Product} = require('../models/product');
 const {Category} =require('../models/category');
-const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const aws = require("aws-sdk");
 const multer = require("multer");
 const multerS3 = require("multer-s3");
 const mongoose = require("mongoose");
 const express = require('express');
 const router = express.Router();
 
-// Configure AWS SDK
-const s3Client = new S3Client({
-    region: "eu-west-1"
+const s3 = new aws.s3({
+    accesKeyId : process.env.accesKeyId,
+    secretAccessKey : process.env.secretAccessKey,
+    region : process.env.region
 });
 
-// Configure multer for file upload
 const upload = multer({
-    storage: multerS3({
-        s3: s3Client,
-        bucket: "cyclic-plum-courageous-cormorant-eu-west-1",
-        acl: "public-read", // Make uploaded file public-readable (optional)
-        key: function (req, file, cb) {
-            cb(null, Date.now().toString() + "-" + file.originalname);
-        },
-    }),
-});
-
+    storage :multerS3({
+        s3 ,
+        bucket : process.env.Bucket,
+        metadata :function(req,file,cb){
+            cb(null ,{fieldName :file.fieldname})
+            },
+            key :function(req,file,cb){
+                cb(null , Date.now().toString() + "-" + file.originalname);
+            },
+    })
+ })
 
 router.post(`/`,upload.single('file'), async(req, res) =>{
     const category = await Category.findById(req.body.category);

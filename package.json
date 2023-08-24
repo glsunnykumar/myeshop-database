@@ -13,6 +13,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.397.0",
     "@aws-sdk/credential-provider-node": "^3.395.0",
+    "@cyclic.sh/s3fs": "^1.2.9",
     "aws-sdk": "^2.1438.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
