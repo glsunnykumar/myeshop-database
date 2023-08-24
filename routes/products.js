@@ -1,13 +1,13 @@
 const {Product} = require('../models/product');
 const {Category} =require('../models/category');
-const aws = require("aws-sdk");
+const S3 = require("aws-sdk/clients/s3.js");
 const multer = require("multer");
 const multerS3 = require("multer-s3");
 const mongoose = require("mongoose");
 const express = require('express');
 const router = express.Router();
 
-const s3 = new aws.s3({
+const s3 = new S3({
     accesKeyId : process.env.accesKeyId,
     secretAccessKey : process.env.secretAccessKey,
     region : process.env.region
@@ -16,7 +16,7 @@ const s3 = new aws.s3({
 const upload = multer({
     storage :multerS3({
         s3 ,
-        bucket : process.env.Bucket,
+        bucket :'cyclic-plum-courageous-cormorant-eu-west-1',
         metadata :function(req,file,cb){
             cb(null ,{fieldName :file.fieldname})
             },
