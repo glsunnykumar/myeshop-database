@@ -7,35 +7,71 @@ const mongoose = require("mongoose");
 const express = require('express');
 const router = express.Router();
 
-const s3 = new S3({
-    accesKeyId : process.env.accesKeyId,
-    secretAccessKey : process.env.secretAccessKey,
-    region : process.env.region
-});
+const config = {
+    region: process.env.AWS_REGION,
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    },
+  };
+  
 
-const upload = multer({
-    storage :multerS3({
-        s3 ,
-        bucket :'cyclic-plum-courageous-cormorant-eu-west-1',
-        metadata :function(req,file,cb){
-            cb(null ,{fieldName :file.fieldname})
-            },
-            key :function(req,file,cb){
-                cb(null , Date.now().toString() + "-" + file.originalname);
-            },
-    })
- })
+const S3_BUCKET_NAME = process.env.CYCLIC_BUCKET_NAME;
+const fs = require("@cyclic.sh/s3fs/promises")(S3_BUCKET_NAME, config);
 
-router.post(`/`,upload.single('file'), async(req, res) =>{
+
+
+// const upload = multer({
+//     storage :multerS3({
+//         s3 ,
+//         bucket :'cyclic-plum-courageous-cormorant-eu-west-1',
+//         metadata :function(req,file,cb){
+//             cb(null ,{fieldName :file.fieldname})
+//             },
+//             key :function(req,file,cb){
+//                 cb(null , Date.now().toString() + "-" + file.originalname);
+//             },
+//     })
+//  })
+
+router.post(`/`, async(req, res) =>{
     const category = await Category.findById(req.body.category);
 
-   // Get the file path from the request
-   const filePath = req.file.location;
-   console.log(filePath);
+    if (!req.body.image) {
+        return res.status(400).json({ error: 'Image data is missing in the request.' });
+      }
 
-    const file = req.file;
+
+      const imageData = req.body.imageData;
+      const objectKey = `uploaded-images/${Date.now()}.jpg`; // Unique object key
     
-    if(!file) return res.status(400).send('file not found');
+      // Decode the base64 image data into a Buffer
+      const imageBuffer = Buffer.from(imageData, 'base64');
+
+      
+  // Set up the parameters for the S3 upload
+  const params = {
+    Bucket: bucketName,
+    Key: objectKey,
+    Body: imageBuffer
+  };
+    
+  const filePath ='';
+  s3.upload(params, (err, data) => {
+    if (err) {
+      console.error('Error uploading image to S3:', err);
+      return res.status(500).json({ error: 'Failed to upload image to S3.' });
+    } else {
+      console.log('Image uploaded successfully to S3:', data.Location);
+      filePath =data.location;
+      return res.status(200).json({ imageUrl: data.Location });
+    }
+  });
+    
+
+   console.log(filePath);
+ 
+   
     if(!category)
     return res.status(500).send('Invalid Category');
 
@@ -67,7 +103,8 @@ router.get(`/`, async (req, res) =>{
         filter = {category : req.query.categories.split(',')}
     }
     const productList = await Product.find(filter).populate('category');
-
+  // Read the image file
+   
     if(!productList) {
         res.status(500).json({success: false})
     } 
@@ -103,9 +140,9 @@ router.get(`/get/featured/:count`, async (req, res) =>{
     res.send(products);
 })
 
+//,upload.single('image')
 
-
-router.put(`/:id`,upload.single('image'),async(req,res)=>{
+router.put(`/:id`,async(req,res)=>{
 
     if (!mongoose.isValidObjectId(req.params.id)) {
         return res.status(400).send('Invalid Product Id');
@@ -166,7 +203,7 @@ router.put(`/:id`,upload.single('image'),async(req,res)=>{
 })
 
 router.put(`/gallery-images/:id`,
-upload.array('image' , 4),
+//upload.array('image' , 4),
 async(req,res)=>{
 
     if(!mongoose.isValidObjectId(req.params.id)){
