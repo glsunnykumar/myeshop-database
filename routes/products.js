@@ -42,9 +42,10 @@ const storage = multer.diskStorage({
     
     const category = await Category.findById(req.body.category);
     const file = req.file;
-    const fileName = file.filename;
-
     console.log(req);
+    const fileName = req.file.filename;
+
+    
     console.log(file);
     
     if(!file) return res.status(400).send('file not found');
