@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.397.0",
+    "@aws-sdk/client-s3": "^3.398.0",
     "@aws-sdk/credential-provider-node": "^3.395.0",
     "@cyclic.sh/s3fs": "^1.2.9",
     "aws-sdk": "^2.1438.0",

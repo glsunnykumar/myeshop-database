@@ -1,5 +1,6 @@
 const {Product} = require('../models/product');
 const {Category} =require('../models/category');
+const uploadImage = require('./imageupload');
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
@@ -38,7 +39,7 @@ const storage = multer.diskStorage({
   const uploadOptions = multer({ storage: storage })
 
 
-  router.post(`/`, async(req, res) =>{
+  router.post(`/`, uploadImage.single("image"), async(req, res) =>{
     
     const category = await Category.findById(req.body.category);
     const file = req.body.image;
