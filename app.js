@@ -4,6 +4,7 @@ const morgan = require('morgan');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const autJwt = require('./helpers/jwt');
+const bodyParser = require('body-parser');
 const errorHandler = require('./helpers/error-handler');
 require('dotenv/config');
 
@@ -14,6 +15,7 @@ app.options('*', cors())
 //Middleware
 app.use(express.json());
 app.use(morgan('tiny'));
+app.use(bodyParser.json());
 //app.use(autJwt());
 app.use('/public/upload',express.static(__dirname +'/public/upload'));
 app.use(errorHandler);

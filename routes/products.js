@@ -88,13 +88,13 @@ router.post(`/`,uploadOptions.single('image'), async(req, res) =>{
     
     if(!file) return res.status(400).send('file not found');
 
-    const imagePath = req.file.path
+    const imagePath = req.file.originalname;
     const blob = fs.readFileSync(imagePath)
 
-    const uploadedImage = await s3.upload({
-        Bucket: process.env.AWS_S3_BUCKET_NAME,
-        Key: req.file.originalFilename,
-        Body: blob,
+    const uploadedImage =  await s3.putObject({
+        Body: JSON.stringify(req.file),
+        Bucket: process.env.BUCKET,
+        Key: imagePath,
       }).promise()
 
     console.log(uploadedImage);
