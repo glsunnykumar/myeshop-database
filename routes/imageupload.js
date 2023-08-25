@@ -33,9 +33,11 @@ function sanitizeFile(file, cb) {
     const fileExts = [".png", ".jpg", ".jpeg", ".gif"];
 
     // Check allowed extensions
-    const isAllowedExt = fileExts.includes(
-        path.extname(file.originalname.toLowerCase())
-    );
+
+    const isAllowedExt = true;
+    // const isAllowedExt = fileExts.includes(
+    //     path.extname(file.originalname.toLowerCase())
+    // );
 
     // Mime type must be an image
     const isAllowedMimeType = file.mimetype.startsWith("image/");
