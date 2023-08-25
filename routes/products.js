@@ -43,27 +43,26 @@ const storage = multer.diskStorage({
     const category = await Category.findById(req.body.category);
     const file = req.file;
     console.log(req);
-    const fileName = req.file.filename;
+    const fileName = req.file.name;
 
     
     console.log(file);
     
     if(!file) return res.status(400).send('file not found');
 
-    const imagePath = req.file.originalname;
-    const blob = fs.readFileSync(imagePath)
+    // const imagePath = req.file.name;
+    // const blob = fs.readFileSync(imagePath)
 
     const uploadedImage =  await s3.putObject({
         Body: JSON.stringify(req.file),
         Bucket: process.env.BUCKET,
-        Key: imagePath,
+        Key: fileName,
       }).promise()
 
     console.log(uploadedImage);
    // const basePath =`${req.protocol}://${req.get('host')}/public/upload/`;
     if(!category)
     return res.status(500).send('Invalid Category');
-    console.log(`${basePath}${fileName}`);
 
     let product = new Product({
         name: req.body.name,
