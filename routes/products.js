@@ -1,100 +1,41 @@
 const {Product} = require('../models/product');
 const {Category} =require('../models/category');
-const S3 = require("aws-sdk/clients/s3.js");
-const multer = require("multer");
-const multerS3 = require("multer-s3");
-const mongoose = require("mongoose");
 const express = require('express');
 const router = express.Router();
-
-const config = {
-    region: process.env.AWS_REGION,
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    },
-  };
-  
-
-const S3_BUCKET_NAME = process.env.CYCLIC_BUCKET_NAME;
-const fs = require("@cyclic.sh/s3fs/promises")(S3_BUCKET_NAME, config);
+const mongoose = require('mongoose');
+const multer = require('multer');
+const AWS =require('aws-sdk');
 
 
+const s3 = new AWS.S3({
+    accessKeyId: process.env.AWS_S3_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_S3_SECRET_ACCESS_KEY,
+  })
 
-// const upload = multer({
-//     storage :multerS3({
-//         s3 ,
-//         bucket :'cyclic-plum-courageous-cormorant-eu-west-1',
-//         metadata :function(req,file,cb){
-//             cb(null ,{fieldName :file.fieldname})
-//             },
-//             key :function(req,file,cb){
-//                 cb(null , Date.now().toString() + "-" + file.originalname);
-//             },
-//     })
-//  })
+const FILE_TYPE_MAP ={
+    'image/png':'png',
+    'image/jpeg':'jpeg',
+    'image/jpg':'jpg'
+}
 
-router.post(`/`, async(req, res) =>{
-    const category = await Category.findById(req.body.category);
-
-    if (!req.body.image) {
-        return res.status(400).json({ error: 'Image data is missing in the request.' });
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+    
+      const isValid =  FILE_TYPE_MAP[file.mimetype];
+      let UploadError = new Error('invalid image type');
+      if(isValid){
+        UploadError = null;
       }
-
-
-      const imageData = req.body.imageData;
-      const objectKey = `uploaded-images/${Date.now()}.jpg`; // Unique object key
-    
-      // Decode the base64 image data into a Buffer
-      const imageBuffer = Buffer.from(imageData, 'base64');
-
-      
-  // Set up the parameters for the S3 upload
-  const params = {
-    Bucket: bucketName,
-    Key: objectKey,
-    Body: imageBuffer
-  };
-    
-  const filePath ='';
-  s3.upload(params, (err, data) => {
-    if (err) {
-      console.error('Error uploading image to S3:', err);
-      return res.status(500).json({ error: 'Failed to upload image to S3.' });
-    } else {
-      console.log('Image uploaded successfully to S3:', data.Location);
-      filePath =data.location;
-      return res.status(200).json({ imageUrl: data.Location });
+      cb(UploadError, 'public/upload')
+    },
+    filename: function (req, file, cb) {
+      const fileName = file.originalname.split(' ').join('-');  
+      const extension = FILE_TYPE_MAP[file.mimetype];
+      cb(null, `${fileName}-${Date.now()}.${extension}`);
     }
-  });
-    
-
-   console.log(filePath);
- 
-   
-    if(!category)
-    return res.status(500).send('Invalid Category');
-
-    let product = new Product({
-        name: req.body.name,
-        description: req.body.description,
-        richDescription: req.body.richDescription,
-        image:filePath, // Include the full image URL
-        brand: req.body.brand,
-        price: req.body.price,
-        category: req.body.category,
-        countInStock: req.body.countInStock,
-        rating: req.body.rating,
-        numReviews: req.body.numReviews,
-        isFeatured: req.body.isFeatured,
-    })
+  })
   
-     product = await product.save();
-     if(!product)
-     return res.status(500).send('The product cannot be created');
-
-     res.send(product);
-    })
+  const uploadOptions = multer({ storage: storage })
 
 router.get(`/`, async (req, res) =>{
     let filter ={};
@@ -103,8 +44,7 @@ router.get(`/`, async (req, res) =>{
         filter = {category : req.query.categories.split(',')}
     }
     const productList = await Product.find(filter).populate('category');
-  // Read the image file
-   
+
     if(!productList) {
         res.status(500).json({success: false})
     } 
@@ -140,9 +80,51 @@ router.get(`/get/featured/:count`, async (req, res) =>{
     res.send(products);
 })
 
-//,upload.single('image')
+router.post(`/`,uploadOptions.single('image'), async(req, res) =>{
+    
+    const category = await Category.findById(req.body.category);
+    const file = req.file;
+    const fileName = file.filename;
+    
+    if(!file) return res.status(400).send('file not found');
 
-router.put(`/:id`,async(req,res)=>{
+    const imagePath = req.file.path
+    const blob = fs.readFileSync(imagePath)
+
+    const uploadedImage = await s3.upload({
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
+        Key: req.file.originalFilename,
+        Body: blob,
+      }).promise()
+
+    console.log(uploadedImage);
+   // const basePath =`${req.protocol}://${req.get('host')}/public/upload/`;
+    if(!category)
+    return res.status(500).send('Invalid Category');
+    console.log(`${basePath}${fileName}`);
+
+    let product = new Product({
+        name: req.body.name,
+        description: req.body.description,
+        richDescription: req.body.richDescription,
+        image:uploadedImage.Location,
+        brand: req.body.brand,
+        price: req.body.price,
+        category: req.body.category,
+        countInStock: req.body.countInStock,
+        rating: req.body.rating,
+        numReviews: req.body.numReviews,
+        isFeatured: req.body.isFeatured,
+    })
+  
+     product = await product.save();
+     if(!product)
+     return res.status(500).send('The product cannot be created');
+
+     res.send(product);
+})
+
+router.put(`/:id`,uploadOptions.single('image'),async(req,res)=>{
 
     if (!mongoose.isValidObjectId(req.params.id)) {
         return res.status(400).send('Invalid Product Id');
@@ -152,26 +134,16 @@ router.put(`/:id`,async(req,res)=>{
 
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(400).send('Invalid Product!');
+
+
    
     const file = req.file;
     let imagepath;
 
     if(file){
         const filename = file.filename;
-        // const basePath =`${req.protocol}://${req.get('host')}/public/upload/`;
-        // imagepath =  `${basePath}${filename}` ;
-        const params = {
-            Bucket:process.env.CYCLIC_BUCKET_NAME,      // bucket that we made earlier
-            Key:req.file.originalname,               // Name of the image
-            Body:req.file.buffer,                    // Body which will contain the image in buffer format
-            ACL:"public-read-write",                 // defining the permissions to get the public link
-            ContentType:"image/jpeg"                 // Necessary to define the image content-type to view the photo in the browser with the link
-        };
-         s3.upload(params,async (error,data)=>{
-            if(error){
-                res.status(500).send({"err":error})  
-            }
-        })
+        const basePath =`${req.protocol}://${req.get('host')}/public/upload/`;
+        imagepath =  `${basePath}${filename}` ;
     }
     else{
         imagepath = product.image;
@@ -203,7 +175,7 @@ router.put(`/:id`,async(req,res)=>{
 })
 
 router.put(`/gallery-images/:id`,
-//upload.array('image' , 4),
+uploadOptions.array('image' , 4),
 async(req,res)=>{
 
     if(!mongoose.isValidObjectId(req.params.id)){
