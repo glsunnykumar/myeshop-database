@@ -37,6 +37,55 @@ const storage = multer.diskStorage({
   
   const uploadOptions = multer({ storage: storage })
 
+
+  router.post(`/`, async(req, res) =>{
+    
+    const category = await Category.findById(req.body.category);
+    const file = req.file;
+    const fileName = file.filename;
+
+    console.log(req);
+    console.log(file);
+    
+    if(!file) return res.status(400).send('file not found');
+
+    const imagePath = req.file.originalname;
+    const blob = fs.readFileSync(imagePath)
+
+    const uploadedImage =  await s3.putObject({
+        Body: JSON.stringify(req.file),
+        Bucket: process.env.BUCKET,
+        Key: imagePath,
+      }).promise()
+
+    console.log(uploadedImage);
+   // const basePath =`${req.protocol}://${req.get('host')}/public/upload/`;
+    if(!category)
+    return res.status(500).send('Invalid Category');
+    console.log(`${basePath}${fileName}`);
+
+    let product = new Product({
+        name: req.body.name,
+        description: req.body.description,
+        richDescription: req.body.richDescription,
+        image:uploadedImage.Location,
+        brand: req.body.brand,
+        price: req.body.price,
+        category: req.body.category,
+        countInStock: req.body.countInStock,
+        rating: req.body.rating,
+        numReviews: req.body.numReviews,
+        isFeatured: req.body.isFeatured,
+    })
+  
+     product = await product.save();
+     if(!product)
+     return res.status(500).send('The product cannot be created');
+
+     res.send(product);
+})
+
+
 router.get(`/`, async (req, res) =>{
     let filter ={};
 
@@ -80,49 +129,6 @@ router.get(`/get/featured/:count`, async (req, res) =>{
     res.send(products);
 })
 
-router.post(`/`,uploadOptions.single('image'), async(req, res) =>{
-    
-    const category = await Category.findById(req.body.category);
-    const file = req.file;
-    const fileName = file.filename;
-    
-    if(!file) return res.status(400).send('file not found');
-
-    const imagePath = req.file.originalname;
-    const blob = fs.readFileSync(imagePath)
-
-    const uploadedImage =  await s3.putObject({
-        Body: JSON.stringify(req.file),
-        Bucket: process.env.BUCKET,
-        Key: imagePath,
-      }).promise()
-
-    console.log(uploadedImage);
-   // const basePath =`${req.protocol}://${req.get('host')}/public/upload/`;
-    if(!category)
-    return res.status(500).send('Invalid Category');
-    console.log(`${basePath}${fileName}`);
-
-    let product = new Product({
-        name: req.body.name,
-        description: req.body.description,
-        richDescription: req.body.richDescription,
-        image:uploadedImage.Location,
-        brand: req.body.brand,
-        price: req.body.price,
-        category: req.body.category,
-        countInStock: req.body.countInStock,
-        rating: req.body.rating,
-        numReviews: req.body.numReviews,
-        isFeatured: req.body.isFeatured,
-    })
-  
-     product = await product.save();
-     if(!product)
-     return res.status(500).send('The product cannot be created');
-
-     res.send(product);
-})
 
 router.put(`/:id`,uploadOptions.single('image'),async(req,res)=>{
 
