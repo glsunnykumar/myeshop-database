@@ -41,16 +41,16 @@ const storage = multer.diskStorage({
   router.post(`/`, async(req, res) =>{
     
     const category = await Category.findById(req.body.category);
-    const file = req.file;
-    console.log(req.file);
-    const fileName = req.file.name;
+    const file = req.image;
+    console.log(req.image);
+    const fileName = req.image.name;
     if(!file) return res.status(400).send('file not found');
 
     // const imagePath = req.file.name;
     // const blob = fs.readFileSync(imagePath)
 
     const uploadedImage =  await s3.putObject({
-        Body: JSON.stringify(req.file),
+        Body: JSON.stringify(req.image),
         Bucket: process.env.BUCKET,
         Key: fileName,
       }).promise()
