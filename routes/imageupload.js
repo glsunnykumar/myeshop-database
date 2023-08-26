@@ -13,6 +13,23 @@ const s3 = new S3Client({
     region:  process.env.AWS_REGION // this is the region that you select in AWS account
 })
 
+const config = {
+    region: process.env.AWS_REGION,
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    }
+}
+
+const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME
+const fs = require('@cyclic.sh/s3fs/promises')(S3_BUCKET_NAME, config)
+
+const user = {
+    name: 'Ashik Nesin',
+    website: "https://AshikNesin.com"
+}
+
+
 
 const s3Storage = multerS3({
     s3: s3, // s3 instance
