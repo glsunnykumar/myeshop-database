@@ -7,8 +7,8 @@ const { S3Client } = require("@aws-sdk/client-s3");
 // (this is how we create s3 instance in v3)
 const s3 = new S3Client({
     credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID, // store it in .env file to keep it safe
-        secretAccessKey:  process.env.AWS_SECRET_ACCESS_KEY,
+        accessKeyId: 'ASIATM5NDY7N5C7QXK5K', // store it in .env file to keep it safe
+        secretAccessKey:  'kkYDYng7C48tDGpeOy73qCfXIwlJMJZv3qidzNy5',
     },
     region:  process.env.AWS_REGION // this is the region that you select in AWS account
 })
