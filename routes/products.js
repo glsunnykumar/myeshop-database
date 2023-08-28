@@ -19,25 +19,6 @@ const FILE_TYPE_MAP ={
     'image/jpg':'jpg'
 }
 
-const config = {
-    region: process.env.AWS_REGION,
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    }
-}
-
-const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME
-const fs = require('@cyclic.sh/s3fs/promises')(S3_BUCKET_NAME, config)
-
-const user = {
-    name: 'Ashik Nesin',
-    website: "https://AshikNesin.com"
-}
-
-
-
-
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
     
@@ -57,64 +38,49 @@ const storage = multer.diskStorage({
   
   const uploadOptions = multer({ storage: storage })
 
+
   router.post(`/`, async(req, res) =>{
-    await fs.writeFile('s3fs/user.json', JSON.stringify(user))
-
-    console.log(`Saved json file to AWS S3`);
-
-    const currentPath = `${process.cwd()}/s3fs/user.json`
-
-    console.log({ currentPath });
-
-    const json = JSON.parse(await fs.readFile(currentPath))
-
-    console.log(`Retrive json file from AWS S3`);
-
-    console.log(JSON.stringify(json, null, 2));
-  })
-
-//   router.post(`/`, uploadImage.single("image"), async(req, res) =>{
     
-//     const category = await Category.findById(req.body.category);
-//     const file = req.body.image;
-//     console.log(req.body.image);
-//     const fileName = req.body.image;
-//     if(!file) return res.status(400).send('file not found');
+    const category = await Category.findById(req.body.category);
+    const file = req.body.image;
+    console.log(req.body.image);
+    const fileName = req.body.image;
+    if(!file) return res.status(400).send('file not found');
 
-//     // const imagePath = req.file.name;
-//     // const blob = fs.readFileSync(imagePath)
+    // const imagePath = req.file.name;
+    // const blob = fs.readFileSync(imagePath)
 
-//     const uploadedImage =  await s3.putObject({
-//         Body: JSON.stringify(req.body.image),
-//         Bucket: process.env.CYCLIC_BUCKET_NAME,
-//         Key: fileName,
-//       }).promise()
+    const uploadedImage =  await s3.putObject({
+        Body: JSON.stringify(req.body.image),
+        Bucket: process.env.CYCLIC_BUCKET_NAME,
+        Key: fileName,
+      }).promise()
 
-//     console.log(uploadedImage);
-//    // const basePath =`${req.protocol}://${req.get('host')}/public/upload/`;
-//     if(!category)
-//     return res.status(500).send('Invalid Category');
+    console.log(uploadedImage);
+   // const basePath =`${req.protocol}://${req.get('host')}/public/upload/`;
+    if(!category)
+    return res.status(500).send('Invalid Category');
 
-//     let product = new Product({
-//         name: req.body.name,
-//         description: req.body.description,
-//         richDescription: req.body.richDescription,
-//         image:uploadedImage.Location,
-//         brand: req.body.brand,
-//         price: req.body.price,
-//         category: req.body.category,
-//         countInStock: req.body.countInStock,
-//         rating: req.body.rating,
-//         numReviews: req.body.numReviews,
-//         isFeatured: req.body.isFeatured,
-//     })
+    let product = new Product({
+        name: req.body.name,
+        description: req.body.description,
+        richDescription: req.body.richDescription,
+        image:uploadedImage.Location,
+        brand: req.body.brand,
+        price: req.body.price,
+        category: req.body.category,
+        countInStock: req.body.countInStock,
+        rating: req.body.rating,
+        numReviews: req.body.numReviews,
+        isFeatured: req.body.isFeatured,
+    })
   
-//      product = await product.save();
-//      if(!product)
-//      return res.status(500).send('The product cannot be created');
+     product = await product.save();
+     if(!product)
+     return res.status(500).send('The product cannot be created');
 
-//      res.send(product);
-// })
+     res.send(product);
+})
 
 
 router.get(`/`, async (req, res) =>{
