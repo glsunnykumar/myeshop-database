@@ -13,6 +13,8 @@ const FILE_TYPE_MAP ={
     'image/jpg':'jpg'
 }
 
+const upload =multer();
+
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
     
@@ -38,13 +40,10 @@ router.get(`/`, async (req, res) =>{
     if(req.query.categories){
         filter = {category : req.query.categories.split(',')}
     }
-    console.log('entering then function');
      await Product.find(filter).populate('category')
     .lean()
     .exec().then((products,err)=>{
-        console.log('entering then exec function');
         if (err) {
-            console.log('error occured');
             return res.status(500).json({ error: err });
           }
           // Now you can use map on the plain JavaScript objects
@@ -95,27 +94,23 @@ router.get(`/get/featured/:count`, async (req, res) =>{
     res.send(products);
 })
 
-router.post(`/`,uploadOptions.single('image'), async(req, res) =>{
+router.post(`/`,upload.single('image'), async(req, res) =>{
     
     const category = await Category.findById(req.body.category);
     const file = req.file;
     const fileName = file.filename;
     
     if(!file) return res.status(400).send('file not found');
-    console.log(`${req.protocol}`);
-    const basePath =`${req.protocol}://${req.get('host')}/public/upload/`;
     if(!category)
     return res.status(500).send('Invalid Category');
-    console.log(`${basePath}${fileName}`);
 
 
     let product = new Product({
         name: req.body.name,
         description: req.body.description,
         richDescription: req.body.richDescription,
-        image:`${basePath}${fileName}` ,
         img: {
-            data: fs.readFileSync(path.join(__dirname, '..', 'public', 'upload' , req.file.filename)),
+            data:req.file.buffer,
             contentType: req.file.mimetype
         },
         brand: req.body.brand,
