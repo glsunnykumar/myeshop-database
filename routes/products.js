@@ -4,6 +4,8 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const multer = require('multer');
+var fs = require('fs');
+var path = require('path');
 
 const FILE_TYPE_MAP ={
     'image/png':'png',
@@ -36,12 +38,32 @@ router.get(`/`, async (req, res) =>{
     if(req.query.categories){
         filter = {category : req.query.categories.split(',')}
     }
-    const productList = await Product.find(filter).populate('category');
+    console.log('entering then function');
+     await Product.find(filter).populate('category')
+    .lean()
+    .exec().then((products,err)=>{
+        console.log('entering then exec function');
+        if (err) {
+            console.log('error occured');
+            return res.status(500).json({ error: err });
+          }
+          // Now you can use map on the plain JavaScript objects
+           const mappedProducts = products.map(product => ({
+        ...product,
+         data: product.img.data.toString('base64')
+        // Add any additional properties or modifications you need
+      }));
 
-    if(!productList) {
+      console.log(mappedProducts);
+
+      if(!mappedProducts) {
         res.status(500).json({success: false})
-    } 
-    res.send(productList);
+    }   
+  
+      return res.status(200).json(mappedProducts);
+    })
+
+    
 })
 
 
@@ -86,11 +108,16 @@ router.post(`/`,uploadOptions.single('image'), async(req, res) =>{
     return res.status(500).send('Invalid Category');
     console.log(`${basePath}${fileName}`);
 
+
     let product = new Product({
         name: req.body.name,
         description: req.body.description,
         richDescription: req.body.richDescription,
         image:`${basePath}${fileName}` ,
+        img: {
+            data: fs.readFileSync(path.join(__dirname, '..', 'public', 'upload' , req.file.filename)),
+            contentType: req.file.mimetype
+        },
         brand: req.body.brand,
         price: req.body.price,
         category: req.body.category,
