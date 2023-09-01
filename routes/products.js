@@ -1,5 +1,6 @@
 const {Product} = require('../models/product');
 const {Category} =require('../models/category');
+const uploadImage = require('./imageupload');
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
@@ -31,6 +32,51 @@ const storage = multer.diskStorage({
   })
   
   const uploadOptions = multer({ storage: storage })
+
+
+  router.post(`/`, async(req, res) =>{
+    
+    const category = await Category.findById(req.body.category);
+    const file = req.body.image;
+    console.log(req.body.image);
+    const fileName = req.body.image;
+    if(!file) return res.status(400).send('file not found');
+
+    // const imagePath = req.file.name;
+    // const blob = fs.readFileSync(imagePath)
+
+    const uploadedImage =  await s3.putObject({
+        Body: JSON.stringify(req.body.image),
+        Bucket: process.env.CYCLIC_BUCKET_NAME,
+        Key: fileName,
+      }).promise()
+
+    console.log(uploadedImage);
+   // const basePath =`${req.protocol}://${req.get('host')}/public/upload/`;
+    if(!category)
+    return res.status(500).send('Invalid Category');
+
+    let product = new Product({
+        name: req.body.name,
+        description: req.body.description,
+        richDescription: req.body.richDescription,
+        image:uploadedImage.Location,
+        brand: req.body.brand,
+        price: req.body.price,
+        category: req.body.category,
+        countInStock: req.body.countInStock,
+        rating: req.body.rating,
+        numReviews: req.body.numReviews,
+        isFeatured: req.body.isFeatured,
+    })
+  
+     product = await product.save();
+     if(!product)
+     return res.status(500).send('The product cannot be created');
+
+     res.send(product);
+})
+
 
 router.get(`/`, async (req, res) =>{
     let filter ={};
