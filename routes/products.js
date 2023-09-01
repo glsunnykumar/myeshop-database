@@ -53,8 +53,6 @@ router.get(`/`, async (req, res) =>{
         // Add any additional properties or modifications you need
       }));
 
-      console.log(mappedProducts);
-
       if(!mappedProducts) {
         res.status(500).json({success: false})
     }   
