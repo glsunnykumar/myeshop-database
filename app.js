@@ -39,10 +39,10 @@ const PORT =process.env.PORT || 3000 ;
 
 const connectDB = async () => {
     try {
-      const conn = await mongoose.connect(process.env.CONNECTION_STRING, {
+      const conn = await mongoose.connect('mongodb+srv://EshopOwner:febXI2lNliIYGLTJ@cluster0.cfx2tgd.mongodb.net/', {
         useNewUrlParser: true,
         useUnifiedTopology: true,
-        dbName: process.env.DB_NAME
+        dbName: 'eshop-database'
     });
       console.log(`MongoDB Connected: ${conn.connection.host}`);
     } catch (error) {
