@@ -58,21 +58,6 @@ connectDB().then(() => {
     })
 })
 
-//database
-// mongoose.connect(process.env.CONNECTION_STRING, {
-//     useNewUrlParser: true,
-//     useUnifiedTopology: true,
-//     dbName: process.env.DB_NAME
-// })
-// .then(()=>{
-//     console.log('Database Connection is ready...')
-//     app.listen(PORT,()=>{
-//         console.log('server is running');
-//     })
-// })
-// .catch((err)=> {
-//     console.log(err);
-// })
 
 
 
