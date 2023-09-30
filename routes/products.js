@@ -4,7 +4,7 @@ const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
 const multer = require("multer");
-var fs = require("fs");
+const fs = require('fs');
 var path = require("path");
 
 const FILE_TYPE_MAP = {
@@ -57,13 +57,23 @@ router.get(`/:id`, async (req, res ) =>{
 })
 
 router.get(`/get/count`, async (req, res) =>{
-    const productCount = await Product.countDocuments();
+    // const productCount = await Product.countDocuments();
 
-    if(!productCount) {
-        res.status(500).json({success: false})
-    } 
-    res.status(200).send({
-        count:productCount});
+    // if(!productCount) {
+    //     res.status(500).json({success: false})
+    // } 
+    // res.status(200).send({
+    //     count:productCount});
+
+
+        try {
+            const productCount = await Product.countDocuments();
+    
+            res.status(200).json({ count: productCount });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ success: false, error: "Internal server error" });
+        }     
 })
 router.get(`/get/featured/:count`, async (req, res) =>{
     const count =req.params.count ? req.params.count :0;
@@ -135,7 +145,8 @@ router.put(`/:id`,uploadOptions.single('image'),async(req,res)=>{
     }
 
    
-     
+     const imageArray = [];
+     imageArray.push(imagepath);
 
     const updateProduct =await Product.findByIdAndUpdate(req.params.id ,
         {
@@ -143,6 +154,7 @@ router.put(`/:id`,uploadOptions.single('image'),async(req,res)=>{
             description: req.body.description,
             richDescription: req.body.richDescription,
             image: imagepath,
+            images:imageArray,
             brand: req.body.brand,
             price: req.body.price,
             category: req.body.category,
@@ -160,23 +172,25 @@ router.put(`/:id`,uploadOptions.single('image'),async(req,res)=>{
 })
 
 router.put(`/gallery-images/:id`,
-uploadOptions.array('image' , 4),
+uploadOptions.array('images' , 4),
 async(req,res)=>{
-
+    console.log('return');
     if(!mongoose.isValidObjectId(req.params.id)){
+     
         return  res.status(500).send('Invalid product');
     }
 
     let imagePaths =[];
     const files = req.files;
-    const basePath =`${req.protocol}://${req.get('host')}/public/upload`;
+    console.log(files);
+    const basePath =`${req.protocol}://${req.get('host')}/public/upload/`;
     if(files){
        files.map(file =>{
-            imagePaths.push(`${basePath} ${file.filename}`);
+            imagePaths.push(`${basePath}${file.filename}`);
         })
     }
 
-    const product =await product.findByIdAndUpdate(req.params.id ,
+    const product =await Product.findByIdAndUpdate(req.params.id ,
         {
            images : imagePaths
     },
@@ -190,9 +204,31 @@ async(req,res)=>{
 })
 
 router.delete('/:id',(req,res)=>{
+   
+       
     Product.findByIdAndRemove(req.params.id).then(product =>{
+        const folderPathDisk = path.join(__dirname,'..', '/public/upload');
+        const folderPath =`${req.protocol}://${req.get('host')}/public/upload/`;
         if(product){
-            return res.status(200).json({sucess:true , message:'product deleted sucessfully'})
+           let imagePath = product.image;
+           if(imagePath){
+         
+           console.log(folderPathDisk);
+           console.log(folderPath);
+           // Use string manipulation to remove the base path
+           const trimmedUrl = imagePath.replace(folderPath, '');
+           fs.unlink(path.join(folderPathDisk, trimmedUrl), (err) => {
+            if (err) {
+              console.error(`Error deleting file: ${err}`);
+            } else {
+              console.log(`File ${trimmedUrl} has been deleted.`);
+            }
+          });
+        }
+
+        let imageGalleryPath = product.images;
+        removeImagesFromTheGalleryProduct(imageGalleryPath,folderPathDisk,folderPath);
+        return res.status(200).json({sucess:true , message:'product deleted sucessfully'})
         }
         else{
             return res.status(404).json({sucess:false , message :'product not deleted'})
@@ -202,5 +238,30 @@ router.delete('/:id',(req,res)=>{
         return res.status(400).json({sucess:false ,error : err});
     })
 })
+
+function removeImagesFromTheGalleryProduct(filePathsToDelete,folderPathDisk,folderPath){
+
+    filePathsToDelete.forEach(filePath => {
+        // Use string manipulation to remove the base path
+        const trimmedUrl = filePath.replace(folderPath, '');
+
+        // Construct the absolute file path
+        const absoluteFilePath = path.join(folderPathDisk, trimmedUrl); 
+      
+        // Check if the file exists
+        if (fs.existsSync(absoluteFilePath)) {
+          try {
+            // Delete the file
+            fs.unlinkSync(absoluteFilePath);
+            console.log(`Deleted file: ${filePath}`);
+          } catch (err) {
+            console.error(`Error deleting file: ${err}`);
+          }
+        } else {
+          console.warn(`File not found: ${filePath}`);
+        }
+      });
+
+}
 
 module.exports =router;
