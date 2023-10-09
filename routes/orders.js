@@ -105,12 +105,15 @@ router.post(`/`, async (req, res) =>{
 
 router.post('/create-checkout-session',async(req,res)=>{
     const orderItem = req.body;
+    console.log(orderItem);
     if(!orderItem){
         res.status(400).send('check-out session can not be created');
     }
     const lineItems =await Promise.all(orderItem.map(async orderitem =>{
  
      const product =   await Product.findById(orderitem.product);
+
+     console.log(product);
    
         return {
 
